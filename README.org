@@ -1,0 +1,63 @@
+* Feature
+  - K-V sink
+  - HSET sink
+  - HGET lookup join
+
+* Package
+  #+begin_src shell
+    mvn clean install
+  #+end_src
+
+* Flink binding
+  #+begin_src shell
+    cp flink-connector-redis_2.12-1.13.2-jar-with-dependencies.jar $FLINK_HOME/lib/flink-connector-redis_2.12-1.13.2.jar
+  #+end_src
+
+* Usage
+  #+begin_src sql
+    create table sink_redis(username VARCHAR, level VARCHAR, age VARCHAR) with (
+      'connector'='redis',
+      'host'='r-8vbvcsc16oj6qi1c7g.redis.zhangbei.rds.aliyuncs.com',
+      'port'='6379',
+      'redis-mode'='single',
+      'field-column'='level',
+      'key-column'='username',
+      'put-if-absent'='true',
+      'value-column'='age',
+      'command'='HSET',
+      'maxIdle'='2',
+      'minIdle'='1'
+ )
+    insert into sink_redis select * from (values ('test_hash', '3', '15'))
+  #+end_src
+
+
+* How to test
+
+** Pre-requisite
+   If you have an available redis, you can modify the config in *RedisTestBase.java*.
+
+   Otherwise, you can run a local redis docker container.
+   #+begin_src shell
+     # pull image first
+     docker pull redis
+     # then run it
+     docker run -itd --name redis-test -p 6379:6379 redis
+   #+end_src
+   You may want to disable redis' rdb:
+   #+begin_src shell
+     # get into container
+     docker exec -it <your-container-id> bash
+     # turn off rdb. Refer: https://stackoverflow.com/questions/28785383/how-to-disable-persistence-with-redis
+     redis-cli config set save ""
+   #+end_src
+
+   After that, you can run test with maven.
+   #+begin_src shell
+     mvn test -Dtest=RedisConnectorITCase
+   #+end_src
+
+* Credits
+
+  - [[https://github.com/apache/bahir-flink/tree/master/flink-connector-redis][Bahir-flink]]
+  - [[https://blog.csdn.net/nazeniwaresakini/article/details/114481003][This blog]]
