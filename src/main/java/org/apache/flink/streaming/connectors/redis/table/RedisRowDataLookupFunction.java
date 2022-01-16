@@ -93,7 +93,7 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
           .maximumSize(cacheMaxRows)
           .build();
       }
-    }
+     }
 
     @Override
     public void close() throws Exception {
@@ -106,21 +106,96 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
       super.close();
     }
 
-    public void eval(Object obj) {
-      RowData lookupKey = GenericRowData.of(obj);
-      if (cache != null) {
-        RowData cachedRow = cache.getIfPresent(lookupKey);
-        if (cachedRow != null) {
-          collect(cachedRow);
-          return;
+    private abstract class CommandHandler {
+        StringData key;
+        abstract RowData query();
+    }
+
+    /** Handler HGET lookup.*/
+    private class HGetHandler extends CommandHandler {
+        StringData key;
+        StringData field;
+
+        HGetHandler(StringData key, StringData field) {
+            this.key = key;
+            this.field = field;
         }
-      }
 
-      StringData key = lookupKey.getString(0);
-      String value = command.equals("GET") ? commandsContainer.get(key.toString()) : commandsContainer.hget(additionalKey, key.toString());
-      RowData result = GenericRowData.of(key, StringData.fromString(value));
+        HGetHandler(RowData rowData) {
+            if (additionalKey == null) {
+                this.key = rowData.getString(0);
+                this.field = rowData.getString(1);
+            } else {
+                this.key = StringData.fromString(additionalKey);
+                this.field = rowData.getString(0);
+            }
 
-      cache.put(lookupKey, result);
-      collect(result);
+        }
+
+        @Override
+        RowData query() {
+            StringData value = StringData.fromString(commandsContainer.hget(this.key.toString(), this.field.toString()));
+            if (additionalKey == null) {
+                return GenericRowData.of(this.key, this.field, value);
+
+            } else {
+                return GenericRowData.of(this.field, value);
+
+            }
+        }
+
+    }
+
+    /** Handler GET lookup.*/
+    private class GetHandler extends CommandHandler {
+        StringData key;
+        StringData value;
+
+        GetHandler(StringData key) {
+            this.key = key;
+        }
+
+        GetHandler(RowData rowData) {
+            this.key = rowData.getString(0);
+        }
+
+        @Override
+        RowData query() {
+            StringData value = StringData.fromString(commandsContainer.get(this.key.toString()));
+            return GenericRowData.of(this.key, value);
+        }
+
+    }
+
+    public void eval(Object obj) {
+        RowData rowData = GenericRowData.of(obj);
+        if (cache != null) {
+            RowData cachedRow = cache.getIfPresent(rowData);
+            if (cachedRow != null) {
+                collect(cachedRow);
+                return;
+            }
+        }
+
+        CommandHandler handler = command.equals("GET") ? new GetHandler(rowData) : new HGetHandler(rowData);
+        RowData result = handler.query();
+        cache.put(rowData, result);
+        collect(result);
+    }
+
+    public void eval(StringData key, StringData field) {
+        RowData cacheKey = GenericRowData.of(key.toString() + "_" + field.toString());
+        if (cache != null) {
+            RowData cachedRow = cache.getIfPresent(cacheKey);
+            if (cachedRow != null) {
+                collect(cachedRow);
+                return;
+            }
+        }
+
+        CommandHandler handler = new HGetHandler(key, field);
+        RowData result = handler.query();
+        cache.put(cacheKey, result);
+        collect(result);
     }
   }

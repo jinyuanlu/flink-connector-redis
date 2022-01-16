@@ -1,7 +1,8 @@
 * Feature
   - K-V sink
   - HSET sink
-  - HGET lookup join
+  - HGET lookup by fixed key from option setting
+  - HGET lookup by arbitrary key from rowdata
 
 * Package
   #+begin_src shell

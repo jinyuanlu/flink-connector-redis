@@ -68,14 +68,14 @@ public class RedisConnectorITCase extends RedisTestBase {
     private static final List<Row> testData = new ArrayList<>();
     private static final RowTypeInfo testTypeInfo =
             new RowTypeInfo(
-                    new TypeInformation[] {Types.INT, Types.LONG, Types.STRING},
-                    new String[] {"a", "b", "c"});
+                            new TypeInformation[] {Types.INT, Types.LONG, Types.STRING, Types.STRING},
+                            new String[] {"a", "b", "c", "k"});
 
     static {
-        testData.add(Row.of(1, 1L, "xiamen"));
-        testData.add(Row.of(2, 2L, "beijing"));
-        testData.add(Row.of(3, 2L, "fuzhou"));
-        testData.add(Row.of(3, 3L, "guangzhou"));
+        testData.add(Row.of(1, 1L, "xiamen", TEST_HGET_KEY));
+        testData.add(Row.of(2, 2L, "beijing", TEST_HGET_KEY));
+        testData.add(Row.of(3, 2L, "fuzhou", TEST_HGET_KEY));
+        testData.add(Row.of(3, 3L, "guangzhou",TEST_HGET_KEY));
     }
 
     @Test
@@ -147,7 +147,7 @@ public class RedisConnectorITCase extends RedisTestBase {
     }
 
     @Test
-    public void testRedisLookupJoin() throws Exception {
+    public void testRedisLookupHGetByKField() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         EnvironmentSettings environmentSettings =
             EnvironmentSettings
@@ -159,7 +159,7 @@ public class RedisConnectorITCase extends RedisTestBase {
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, environmentSettings);
 
         // LOOKUP TABLE
-        String lookup_ddl = String.format("create table lookup_redis(field VARCHAR, v VARCHAR) with ("
+        String lookup_ddl = String.format("create table lookup_redis_by_field(field VARCHAR, v VARCHAR) with ("
                                    + "'connector'='redis', "
                                    + "'host'='%s','port'='%s', "
                                    + "'redis-mode'='single',"
@@ -188,8 +188,68 @@ public class RedisConnectorITCase extends RedisTestBase {
             + " b,"
             + " h.v"
             + " FROM src JOIN "
-            + "lookup_redis"
+            + "lookup_redis_by_field"
             + " FOR SYSTEM_TIME AS OF src.proc as h ON src.c = h.field";
+        
+        Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
+        List<String> result =
+                Lists.newArrayList(collected).stream()
+                        .map(Row::toString)
+                        .sorted()
+                        .collect(Collectors.toList());
+
+        log.info(result.toString());
+        List<String> expected = new ArrayList<>();
+        expected.add("+I[1, 1, " + TEST_HGET_VALUE + "]");
+        expected.add("+I[2, 2, null]");
+        expected.add("+I[3, 2, null]");
+        expected.add("+I[3, 3, null]");
+        assertEquals(expected, result);
+
+    }
+    
+    @Test
+    public void testRedisLookupHGetByKey() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        EnvironmentSettings environmentSettings =
+            EnvironmentSettings
+            .newInstance()
+            .useBlinkPlanner()
+            .inStreamingMode()
+            .build();
+        
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, environmentSettings);
+
+        // LOOKUP TABLE
+        String lookup_ddl = String.format("create table lookup_redis_by_key(key VARCHAR, field VARCHAR, v VARCHAR) with ("
+                                   + "'connector'='redis', "
+                                   + "'host'='%s','port'='%s', "
+                                   + "'redis-mode'='single',"
+                                   + "'lookup.cache.max-rows' = '1000',"
+                                   + "'lookup.cache.ttl-sec' = '600',"
+                                   + "'" + REDIS_COMMAND + "'='"
+                                   + RedisCommand.HGET + "',"
+                                   + " 'maxIdle'='2', 'minIdle'='1'  )",
+                                   REDIS_HOST, REDIS_PORT) ;
+
+        log.info(lookup_ddl);
+        tEnv.executeSql(lookup_ddl);
+
+        // prepare a source table
+        String srcTableName = "src";
+        DataStream<Row> srcDs = env.fromCollection(testData).returns(testTypeInfo);
+        Table in = tEnv.fromDataStream(srcDs, $("a"), $("b"), $("c"), $("k"), $("proc").proctime());
+        tEnv.createTemporaryView(srcTableName, in);
+
+        // perform a temporal table join query
+        String dimJoinQuery =
+            "SELECT"
+            + " a,"
+            + " b,"
+            + " h.v"
+            + " FROM src JOIN "
+            + "lookup_redis_by_key"
+            + " FOR SYSTEM_TIME AS OF src.proc as h ON src.c = h.field AND src.k = h.key";
         
         Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
         List<String> result =

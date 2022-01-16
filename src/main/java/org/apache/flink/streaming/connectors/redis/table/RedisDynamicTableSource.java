@@ -46,24 +46,8 @@ public class RedisDynamicTableSource implements LookupTableSource {
 
     @Override
     public LookupRuntimeProvider getLookupRuntimeProvider(LookupContext context) {
-        Preconditions
-            .checkArgument(
-                           context.getKeys().length == 1 && context.getKeys()[0].length == 1,
-                           "Redis source only supports lookup by single key"
-                           );
-
-        int fieldCount = schema.getFieldCount();
-        if (fieldCount != 2) {
-            throw new ValidationException("Redis source only supports 2 columns");
-        }
 
         DataType[] dataTypes = schema.getFieldDataTypes();
-
-        for (int i = 0; i < fieldCount; i++) {
-            if (!dataTypes[i].getLogicalType().getTypeRoot().equals(LogicalTypeRoot.VARCHAR)) {
-                throw new ValidationException("Redis connector only supports STRING type");
-            }
-        }
 
         return TableFunctionProvider.of(new RedisRowDataLookupFunction(this.properties, options));
     }
