@@ -35,6 +35,8 @@ public abstract class RedisTestBase {
     protected static final String TEST_HGET_KEY = "test_city_info";
     protected static final String TEST_HGET_FIELD = "xiamen";
     protected static final String TEST_HGET_VALUE = "ok";
+    protected static final String TEST_GET_KEY = "xiamen";
+    protected static final String TEST_GET_VALUE = "ok";
     protected static JedisPool jedisPool = null;
 
 
@@ -52,6 +54,7 @@ public abstract class RedisTestBase {
     private static void createRedisHGetKey() throws IOException {
         Jedis jedis = jedisPool.getResource();
         jedis.hset(TEST_HGET_KEY, TEST_HGET_FIELD, TEST_HGET_VALUE);
+        jedis.set(TEST_GET_KEY, TEST_GET_VALUE);
         jedis.close();
     }
 }

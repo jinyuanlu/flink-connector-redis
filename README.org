@@ -3,6 +3,7 @@
   - HSET sink
   - HGET lookup by fixed key from option setting
   - HGET lookup by arbitrary key from rowdata
+  - GET lookup by arbitrary key from rowdata
 
 * Package
   #+begin_src shell

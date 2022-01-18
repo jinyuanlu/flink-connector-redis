@@ -267,6 +267,66 @@ public class RedisConnectorITCase extends RedisTestBase {
         assertEquals(expected, result);
 
     }
+    
+    @Test
+    public void testRedisLookupGet() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        EnvironmentSettings environmentSettings =
+            EnvironmentSettings
+            .newInstance()
+            .useBlinkPlanner()
+            .inStreamingMode()
+            .build();
+        
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, environmentSettings);
+
+        // LOOKUP TABLE
+        String lookup_ddl = String.format("create table lookup_redis(k VARCHAR, v VARCHAR) with ("
+                                   + "'connector'='redis', "
+                                   + "'host'='%s','port'='%s', "
+                                   + "'redis-mode'='single',"
+                                   + "'lookup.cache.max-rows' = '1000',"
+                                   + "'lookup.cache.ttl-sec' = '600',"
+                                   + "'" + REDIS_COMMAND + "'='"
+                                   + RedisCommand.GET + "',"
+                                   + " 'maxIdle'='2', 'minIdle'='1'  )",
+                                   REDIS_HOST, REDIS_PORT) ;
+
+        log.info(lookup_ddl);
+        tEnv.executeSql(lookup_ddl);
+
+        // prepare a source table
+        String srcTableName = "src";
+        DataStream<Row> srcDs = env.fromCollection(testData).returns(testTypeInfo);
+        Table in = tEnv.fromDataStream(srcDs, $("a"), $("b"), $("c"), $("k"), $("proc").proctime());
+        tEnv.createTemporaryView(srcTableName, in);
+
+        // perform a temporal table join query
+        String dimJoinQuery =
+            "SELECT"
+            + " a,"
+            + " b,"
+            + " h.v"
+            + " FROM src JOIN "
+            + "lookup_redis"
+            + " FOR SYSTEM_TIME AS OF src.proc as h ON src.c = h.k";
+        
+        Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
+        List<String> result =
+                Lists.newArrayList(collected).stream()
+                        .map(Row::toString)
+                        .sorted()
+                        .collect(Collectors.toList());
+
+        log.info(result.toString());
+        List<String> expected = new ArrayList<>();
+        expected.add("+I[1, 1, " + TEST_GET_VALUE + "]");
+        expected.add("+I[2, 2, null]");
+        expected.add("+I[3, 2, null]");
+        expected.add("+I[3, 3, null]");
+        assertEquals(expected, result);
+
+    }
 
 
 }

@@ -45,6 +45,8 @@ public enum RedisCommand {
      */
     SET(RedisDataType.STRING),
 
+    GET(RedisDataType.STRING),
+
     /**
      * Set key to hold the string value, with a time to live (TTL). If key already holds a value,
      * it is overwritten, regardless of its type.
