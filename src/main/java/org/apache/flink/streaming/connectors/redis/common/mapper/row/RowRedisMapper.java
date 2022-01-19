@@ -28,6 +28,8 @@ public abstract class RowRedisMapper implements RedisMapper<GenericRowData>, Red
 
     private String keyColumn;
 
+    private String wildcardColumn;
+
     private String valueColumn;
 
     private boolean putIfAbsent;
@@ -55,6 +57,16 @@ public abstract class RowRedisMapper implements RedisMapper<GenericRowData>, Red
         this.putIfAbsent = putIfAbsent;
     }
 
+    public RowRedisMapper(RedisCommand redisCommand,  String keyColumn, String fieldColumn, String valueColumn, boolean putIfAbsent, int ttl, String wildcardColumn){
+        this.ttl = ttl;
+        this.redisCommand = redisCommand;
+        this.keyColumn = keyColumn;
+        this.fieldColumn = fieldColumn;
+        this.valueColumn = valueColumn;
+        this.putIfAbsent = putIfAbsent;
+        this.wildcardColumn = wildcardColumn;
+    }
+
     public RowRedisMapper(RedisCommand redisCommand){
         this.redisCommand = redisCommand;
     }
@@ -73,6 +85,7 @@ public abstract class RowRedisMapper implements RedisMapper<GenericRowData>, Red
         this.additionalKey = config.get(RedisConnectorOptions.LOOKUP_ADDITIONAL_KEY);
         this.cacheMaxRows = config.get(RedisConnectorOptions.LOOKUP_CACHE_MAX_ROWS);
         this.cacheTtlSec = config.get(RedisConnectorOptions.LOOKUP_CACHE_TTL_SEC);
+        this.wildcardColumn = config.get(RedisConnectorOptions.WILDCARD_COLUMN);
     }
 
     @Override
@@ -86,7 +99,8 @@ public abstract class RowRedisMapper implements RedisMapper<GenericRowData>, Red
                                            putIfAbsent,
                                            additionalKey,
                                            cacheMaxRows,
-                                           cacheTtlSec
+                                           cacheTtlSec,
+                                           wildcardColumn
                                            );
     }
 
@@ -103,6 +117,11 @@ public abstract class RowRedisMapper implements RedisMapper<GenericRowData>, Red
     @Override
     public String getFieldFromData(GenericRowData row, Integer fieldIndex) {
         return String.valueOf(row.getField(fieldIndex));
+    }
+
+    @Override
+    public String getWildcardFromData(GenericRowData row, Integer wildcardIndex) {
+        return String.valueOf(row.getField(wildcardIndex));
     }
 
     public RedisCommand getRedisCommand() {

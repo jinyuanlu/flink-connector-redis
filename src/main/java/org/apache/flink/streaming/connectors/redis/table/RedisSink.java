@@ -10,6 +10,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDes
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisDataType;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
 import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +32,16 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
 
     private Integer fieldIndex;
 
+    private Integer wildcardIndex;
+
     private Integer ttl;
 
     private RedisMapper<IN> redisSinkMapper;
+
     private RedisCommand redisCommand;
 
     private FlinkJedisConfigBase flinkJedisConfigBase;
+
     private RedisCommandsContainer redisCommandsContainer;
 
 
@@ -58,12 +63,16 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
 
         this.redisCommand = redisCommandDescription.getCommand();
         this.putIfAbsent = redisCommandDescription.isPutIfAbsent();
-
         this.ttl = redisCommandDescription.getTTL();
-        findKeyIndex(tableSchema, redisCommandDescription.getKeyColumn(), redisCommandDescription.getFieldColumn(), redisCommandDescription.getValueColumn());
+        findKeyIndex(tableSchema,
+                     redisCommandDescription.getKeyColumn(),
+                     redisCommandDescription.getFieldColumn(),
+                     redisCommandDescription.getValueColumn(),
+                     redisCommandDescription.getWildcardColumn()
+                     );
     }
 
-    private void findKeyIndex(TableSchema tableSchema, String keyColumn, String fieldColumn, String valueColumn) {
+    private void findKeyIndex(TableSchema tableSchema, String keyColumn, String fieldColumn, String valueColumn, String wildcardColumn) {
         String[] fieldNames = tableSchema.getFieldNames();
         for(int i=0;i<fieldNames.length;i++){
             if(fieldNames[i].equals(keyColumn)){
@@ -72,6 +81,8 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 this.fieldIndex = i;
             }else if(fieldNames[i].equals(valueColumn)){
                 this.valueIndex = i;
+            }else if(fieldNames[i].equals(wildcardColumn)){
+                this.wildcardIndex = i;
             }
         }
 
@@ -87,7 +98,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
      * Called when new data arrives to the sink, and forwards it to Redis channel.
      * Depending on the specified Redis data type (see {@link RedisDataType}),
      * a different Redis command will be applied.
-     * Available commands are RPUSH, LPUSH, SADD, PUBLISH, SET, SETEX, PFADD, HSET, ZADD.
+     * Available commands are RPUSH, LPUSH, SADD, PUBLISH, SET, SETEX, PFADD, HSET, ZADD, ZADD_REM_EX.
      *
      * @param input The incoming data
      */
@@ -96,6 +107,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
         String key = redisSinkMapper.getKeyFromData(input, keyIndex);
         String value = redisSinkMapper.getValueFromData(input, valueIndex);
         String field = null;
+        String wildcard = null;
         if(redisCommand.getRedisDataType() == RedisDataType.HASH || redisCommand.getRedisDataType() == RedisDataType.SORTED_SET){
             field = redisSinkMapper.getFieldFromData(input, fieldIndex);
         }
@@ -125,6 +137,14 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
             case ZADD:
                 this.redisCommandsContainer.zadd(key, field, value);
                 break;
+            case ZADD_REM_EX:
+                wildcard = redisSinkMapper.getWildcardFromData(input, wildcardIndex);
+                String[] arrSplit = wildcard.split(",");
+                Preconditions.checkArgument(arrSplit.length == 2, String.format("Illegal wildcard: %s for zadd_rem_ex. Should look like `0,10`", wildcard));
+                String min = arrSplit[0];
+                String max = arrSplit[1];
+                this.redisCommandsContainer.zadd_rem_ex(key, field, value, min, max, this.ttl);
+                break;
             case ZINCRBY:
                 this.redisCommandsContainer.zincrBy(key, field, value);
                 break;
@@ -133,9 +153,9 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 break;
             case HSET:
                 if(!putIfAbsent){
-                    this.redisCommandsContainer.hset(key, field, value,this.ttl);
+                    this.redisCommandsContainer.hset(key, field, value, this.ttl);
                 } else if(putIfAbsent && !this.redisCommandsContainer.hexists(key, field)){
-                    this.redisCommandsContainer.hset(key, field, value,this.ttl);
+                    this.redisCommandsContainer.hset(key, field, value, this.ttl);
                 }
                 break;
             case HINCRBY:

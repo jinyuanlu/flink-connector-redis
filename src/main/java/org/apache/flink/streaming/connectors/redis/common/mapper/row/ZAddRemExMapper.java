@@ -23,18 +23,17 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import java.util.Map;
 
 /**
- * HGET operation redis mapper.
+ * ZAdd -> Zremrangebyscore -> Expire
  */
-public class HGetMapper extends RowRedisMapper {
+public class ZAddRemExMapper extends RowRedisMapper {
 
-    public HGetMapper() {
-        super(RedisCommand.HGET);
+
+    public ZAddRemExMapper() {
+        super(RedisCommand.ZADD_REM_EX);
     }
 
-
-    public HGetMapper(ReadableConfig config) {
-        super(RedisCommand.HGET, config);
+    public ZAddRemExMapper(ReadableConfig config) {
+        super(RedisCommand.ZADD_REM_EX, config);
     }
-
 
 }

@@ -23,7 +23,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import java.util.Map;
 
 /**
- * HSET operation redis mapper.
+ * HIncre operation redis mapper.
  */
 public class HIncrByMapper extends RowRedisMapper {
 

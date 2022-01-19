@@ -47,6 +47,7 @@ import static org.apache.flink.streaming.connectors.redis.common.config.RedisCon
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.KEY_COLUMN;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.VALUE_COLUMN;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.FIELD_COLUMN;
+import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.WILDCARD_COLUMN;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.PUT_IF_ABSENT;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.TTL;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.LOOKUP_ADDITIONAL_KEY;
@@ -92,6 +93,7 @@ public class RedisDynamicTableFactory
         options.add(KEY_COLUMN);
         options.add(VALUE_COLUMN);
         options.add(FIELD_COLUMN);
+        options.add(WILDCARD_COLUMN);
         options.add(PUT_IF_ABSENT);
         options.add(TTL);
         options.add(LOOKUP_ADDITIONAL_KEY);

@@ -305,6 +305,25 @@ public class RedisContainer implements RedisCommandsContainer, Closeable {
     }
 
     @Override
+    public void zadd_rem_ex(final String key, final String score, final String element, String min, String max, int seconds) {
+        Jedis jedis = null;
+        try {
+            jedis = getInstance();
+            jedis.zadd(key, Double.valueOf(score), element);
+            jedis.zremrangeByScore(key, min, max);
+            jedis.expire(key, seconds);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command ZADD_REM_EX to set {} error message {}",
+                    key, e.getMessage());
+            }
+            throw e;
+        } finally {
+            releaseInstance(jedis);
+        }
+    }
+
+    @Override
     public void zincrBy(final String key, final String score, final String element) {
         Jedis jedis = null;
         try {

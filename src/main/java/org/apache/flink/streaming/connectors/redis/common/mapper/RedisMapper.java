@@ -37,4 +37,12 @@ public interface RedisMapper<T> extends Function, Serializable {
      */
     String getFieldFromData(T data, Integer fieldIndex);
 
+    /**
+     *
+     * @param data
+     * @param wildcardIndex
+     * @return
+     */
+    String getWildcardFromData(T data, Integer wildcardIndex);
+
 }

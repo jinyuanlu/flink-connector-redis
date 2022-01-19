@@ -16,6 +16,8 @@ public class RedisCommandDescription implements Serializable {
 
     private String valueColumn;
 
+    private String wildcardColumn;
+
     private boolean putIfAbsent;
 
     private Integer ttl;
@@ -27,7 +29,7 @@ public class RedisCommandDescription implements Serializable {
     private Integer cacheTtlSec;
 
 
-    public RedisCommandDescription(RedisCommand redisCommand, Integer ttl, String keyColumn, String fieldColumn, String valueColumn, boolean putIfAbsent, String additionalKey, Integer cacheMaxRows, Integer cacheTtlSec)  {
+    public RedisCommandDescription(RedisCommand redisCommand, Integer ttl, String keyColumn, String fieldColumn, String valueColumn, boolean putIfAbsent, String additionalKey, Integer cacheMaxRows, Integer cacheTtlSec, String wildcardColumn)  {
         Objects.requireNonNull(redisCommand, "Redis command type can not be null");
         Objects.requireNonNull(keyColumn, "Redis key-column can not be null");
         this.redisCommand = redisCommand;
@@ -36,6 +38,7 @@ public class RedisCommandDescription implements Serializable {
         this.fieldColumn = fieldColumn;
         this.valueColumn = valueColumn;
         this.putIfAbsent = putIfAbsent;
+        this.wildcardColumn = wildcardColumn;
         this.additionalKey = additionalKey;
         this.cacheMaxRows = cacheMaxRows;
         this.cacheTtlSec = cacheTtlSec;
@@ -55,6 +58,16 @@ public class RedisCommandDescription implements Serializable {
         if (redisCommand.equals(RedisCommand.SETEX)) {
             if (ttl == null) {
                 throw new IllegalArgumentException("SETEX command should have time to live (TTL)");
+            }
+        }
+
+        if (redisCommand.equals(RedisCommand.ZADD_REM_EX)) {
+            if (ttl == null) {
+                throw new IllegalArgumentException("ZADD_REM_EX command should have time to live (TTL)");
+            }
+
+            if (wildcardColumn == null) {
+                throw new IllegalArgumentException("ZADD_REM_EX command should have min max range set by wildcard");
             }
         }
 
@@ -98,5 +111,9 @@ public class RedisCommandDescription implements Serializable {
 
     public Integer getTTL() {
         return ttl;
+    }
+
+    public String getWildcardColumn() {
+        return wildcardColumn;
     }
 }

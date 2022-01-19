@@ -109,6 +109,12 @@ public class RedisConnectorOptions {
             .noDefaultValue()
             .withDescription("Optional value_column for insert to redis");
 
+    public static final ConfigOption<String> WILDCARD_COLUMN = ConfigOptions
+            .key("wildcard-column")
+            .stringType()
+            .noDefaultValue()
+            .withDescription("Optional wildcard-column for arguments need to pass to redis");
+
 
     public static final ConfigOption<String> FIELD_COLUMN = ConfigOptions
             .key("field-column")

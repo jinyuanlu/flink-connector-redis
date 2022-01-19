@@ -112,7 +112,7 @@ public class RedisConnectorITCase extends RedisTestBase {
 
 
     @Test
-    public void testTableSink() throws Exception {
+    public void testHsetSink() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         EnvironmentSettings environmentSettings =
@@ -139,6 +139,43 @@ public class RedisConnectorITCase extends RedisTestBase {
 
         tEnv.executeSql(ddl);
         String sql = " insert into sink_redis select * from (values ('test_hash', '3', '15'))";
+        TableResult tableResult = tEnv.executeSql(sql);
+        tableResult.getJobClient().get()
+                .getJobExecutionResult()
+                .get();
+        System.out.println(sql);
+    }
+
+    @Test
+    public void testZaddRemExSink() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        EnvironmentSettings environmentSettings =
+            EnvironmentSettings
+            .newInstance()
+            .useBlinkPlanner()
+            .inStreamingMode()
+            .build();
+        
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, environmentSettings);
+
+        String ddl = String.format("create table sink_redis_by_zadd_rem_ex(username VARCHAR, level VARCHAR, age VARCHAR, ranger VARCHAR) "
+                                   + "with ( 'connector'='redis', "
+                                   + "'host'='%s','port'='%s', "
+                                   + "'redis-mode'='single',"
+                                   + "'ttl'='60',"
+                                   + "'field-column'='level',"
+                                   + "'wildcard-column'='ranger',"
+                                   + "'key-column'='username', 'put-if-absent'='true','value-column'='age', '"
+                                   + REDIS_COMMAND + "'='"
+                                   + RedisCommand.ZADD_REM_EX + "', "
+                                   + "'maxIdle'='2', 'minIdle'='1'  )",
+                                   REDIS_HOST, REDIS_PORT) ;
+
+        log.info(ddl);
+
+        tEnv.executeSql(ddl);
+        String sql = " insert into sink_redis_by_zadd_rem_ex select * from (values ('test_zadd_rem_ex', '3', '15', '0,20'))";
         TableResult tableResult = tEnv.executeSql(sql);
         tableResult.getJobClient().get()
                 .getJobExecutionResult()

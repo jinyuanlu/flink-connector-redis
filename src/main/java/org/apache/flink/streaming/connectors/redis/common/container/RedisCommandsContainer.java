@@ -131,6 +131,16 @@ public interface RedisCommandsContainer extends Serializable {
     void zadd(String key, String score, String element);
 
     /**
+     * Composite action.
+     * ZADD -> ZREMRANGEBYSCORE -> EXPIRE
+     *
+     * @param key The name of the Sorted Set
+     * @param score Score of the element
+     * @param element  element to be added
+     */
+    void zadd_rem_ex(String key, String score, String element, String min, String max, int seconds);
+
+    /**
      * increase the specified member with the specified scores to the sorted set stored at key.
      * @param key The name of the Sorted Set
      * @param score Score of the element

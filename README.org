@@ -4,6 +4,7 @@
   - HGET lookup by fixed key from option setting
   - HGET lookup by arbitrary key from rowdata
   - GET lookup by arbitrary key from rowdata
+  - ZADD_REM_EX sink
 
 * Package
   #+begin_src shell
