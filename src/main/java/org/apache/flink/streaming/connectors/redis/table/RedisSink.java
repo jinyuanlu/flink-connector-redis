@@ -143,7 +143,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 Preconditions.checkArgument(arrSplit.length == 2, String.format("Illegal wildcard: %s for zadd_rem_ex. Should look like `0,10`", wildcard));
                 String min = arrSplit[0];
                 String max = arrSplit[1];
-                this.redisCommandsContainer.zadd_rem_ex(key, field, value, min, max, this.ttl);
+                this.redisCommandsContainer.zadd_rem_ex(key, value, field, min, max, this.ttl);
                 break;
             case ZINCRBY:
                 this.redisCommandsContainer.zincrBy(key, field, value);
