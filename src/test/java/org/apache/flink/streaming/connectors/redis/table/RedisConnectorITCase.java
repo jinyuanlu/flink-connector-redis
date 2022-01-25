@@ -75,7 +75,7 @@ public class RedisConnectorITCase extends RedisTestBase {
         testData.add(Row.of(1, 1L, "xiamen", TEST_HGET_KEY));
         testData.add(Row.of(2, 2L, "beijing", TEST_HGET_KEY));
         testData.add(Row.of(3, 2L, "fuzhou", TEST_HGET_KEY));
-        testData.add(Row.of(3, 3L, "guangzhou",TEST_HGET_KEY));
+        testData.add(Row.of(3, 3L, "xiamen,xiamen",TEST_HGET_KEY));  // test lookup hmget
     }
 
     @Test
@@ -184,7 +184,7 @@ public class RedisConnectorITCase extends RedisTestBase {
     }
 
     @Test
-    public void testRedisLookupHGetByKField() throws Exception {
+    public void testRedisLookupHGetByField() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         EnvironmentSettings environmentSettings =
             EnvironmentSettings
@@ -240,7 +240,7 @@ public class RedisConnectorITCase extends RedisTestBase {
         expected.add("+I[1, 1, " + TEST_HGET_VALUE + "]");
         expected.add("+I[2, 2, null]");
         expected.add("+I[3, 2, null]");
-        expected.add("+I[3, 3, null]");
+        expected.add("+I[3, 3, " + TEST_HGET_VALUE + "," + TEST_HGET_VALUE + "]");  // test hmget
         assertEquals(expected, result);
 
     }
@@ -300,10 +300,11 @@ public class RedisConnectorITCase extends RedisTestBase {
         expected.add("+I[1, 1, " + TEST_HGET_VALUE + "]");
         expected.add("+I[2, 2, null]");
         expected.add("+I[3, 2, null]");
-        expected.add("+I[3, 3, null]");
+        expected.add("+I[3, 3, " + TEST_HGET_VALUE + "," + TEST_HGET_VALUE + "]");  // test hmget
         assertEquals(expected, result);
 
     }
+    
     
     @Test
     public void testRedisLookupGet() throws Exception {

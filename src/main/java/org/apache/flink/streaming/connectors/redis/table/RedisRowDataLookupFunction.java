@@ -34,9 +34,12 @@ import org.apache.flink.util.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Cache;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.COMMAND;
 import static org.apache.flink.streaming.connectors.redis.common.config.RedisConnectorOptions.LOOKUP_ADDITIONAL_KEY;
@@ -134,7 +137,12 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
 
         @Override
         RowData query() {
-            StringData value = StringData.fromString(commandsContainer.hget(this.key.toString(), this.field.toString()));
+            String[] fieldList = this.field.toString().split(",");
+            String response =  (fieldList.length < 2)
+                ? commandsContainer.hget(this.key.toString(), this.field.toString())
+                : mkString(",", commandsContainer.hmget(this.key.toString(), fieldList));
+            StringData value = StringData.fromString(response);
+
             if (additionalKey == null) {
                 return GenericRowData.of(this.key, this.field, value);
 
@@ -183,6 +191,12 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
         collect(result);
     }
 
+    /**
+     * The invoke entry point of lookup function.
+     *
+     * @param key The HGet/ZRange key to lookup. Currently only support single key.
+     * @param field The HGet/ZRange field to lookup. Multiple field should split by comma.
+     */
     public void eval(StringData key, StringData field) {
         RowData cacheKey = GenericRowData.of(key.toString() + "_" + field.toString());
         if (cache != null) {
@@ -198,4 +212,8 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
         cache.put(cacheKey, result);
         collect(result);
     }
-  }
+
+    public static String mkString(String joinStr, List<String> strings) {
+        return strings.stream().collect(Collectors.joining(joinStr));
+    }
+}

@@ -24,6 +24,7 @@ import redis.clients.jedis.JedisCluster;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.List;
 
 /**
  * Redis command container if we want to connect to a Redis cluster.
@@ -372,6 +373,19 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command hget to key {} with field {} error message {}",
                         key, field, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public List<String> hmget(String key, String... fields) {
+        try {
+            return jedisCluster.hmget(key, fields);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command hget to key {} with field {} error message {}",
+                        key, fields, e.getMessage());
             }
             throw e;
         }

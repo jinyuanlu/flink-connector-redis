@@ -18,6 +18,7 @@ package org.apache.flink.streaming.connectors.redis.common.container;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * The container for all available Redis commands.
@@ -200,6 +201,8 @@ public interface RedisCommandsContainer extends Serializable {
     boolean getbit(String key, long offset);
 
     String hget(String key, String field);
+
+    List<String> hmget(String key, String... fields);
 
     void hdel(String key, String field);
 
