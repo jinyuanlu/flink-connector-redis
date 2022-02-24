@@ -6,6 +6,7 @@
   - HMGET lookup by arbitrary key and multiple fields from rowdata
   - GET lookup by arbitrary key from rowdata
   - ZADD_REM_EX zadd -> zremrangebyscore -> expire
+  - ZINCRE_REM_EX zadd -> zremrangebyscore -> expire
 
 * Package
   #+begin_src shell

@@ -98,7 +98,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
      * Called when new data arrives to the sink, and forwards it to Redis channel.
      * Depending on the specified Redis data type (see {@link RedisDataType}),
      * a different Redis command will be applied.
-     * Available commands are RPUSH, LPUSH, SADD, PUBLISH, SET, SETEX, PFADD, HSET, ZADD, ZADD_REM_EX.
+     * Available commands are RPUSH, LPUSH, SADD, PUBLISH, SET, SETEX, PFADD, HSET, ZADD, ZADD_REM_EX, ZINCRE_REM_EX.
      *
      * @param input The incoming data
      */
@@ -144,6 +144,14 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 String min = arrSplit[0];
                 String max = arrSplit[1];
                 this.redisCommandsContainer.zadd_rem_ex(key, value, field, min, max, this.ttl);
+                break;
+            case ZINCRE_REM_EX:
+                wildcard = redisSinkMapper.getWildcardFromData(input, wildcardIndex);
+                String[] arrSplit2 = wildcard.split(",");
+                Preconditions.checkArgument(arrSplit2.length == 2, String.format("Illegal wildcard: %s for zincre_rem_ex. Should look like `0,10`", wildcard));
+                String min2 = arrSplit2[0];
+                String max2 = arrSplit2[1];
+                this.redisCommandsContainer.zincre_rem_ex(key, value, field, min2, max2, this.ttl);
                 break;
             case ZINCRBY:
                 this.redisCommandsContainer.zincrBy(key, field, value);

@@ -244,6 +244,21 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
     }
 
     @Override
+    public void zincre_rem_ex(final String key, final String score, final String element, String min, String max, int seconds) {
+        try {
+            jedisCluster.zincrby(key, Double.valueOf(score), element);
+            jedisCluster.zremrangeByScore(key, min, max);
+            jedisCluster.expire(key, seconds);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command ZINCRE_REM_EX to set {} error message {}",
+                    key, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+    @Override
     public void zincrBy(final String key, final String score, final String element) {
 
         try {

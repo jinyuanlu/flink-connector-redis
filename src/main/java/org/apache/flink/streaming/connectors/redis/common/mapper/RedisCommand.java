@@ -70,6 +70,8 @@ public enum RedisCommand {
 
     ZADD_REM_EX(RedisDataType.SORTED_SET),
 
+    ZINCRE_REM_EX(RedisDataType.SORTED_SET),
+
     ZINCRBY(RedisDataType.SORTED_SET),
 
     /**
