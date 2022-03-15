@@ -71,6 +71,16 @@ public class RedisCommandDescription implements Serializable {
             }
         }
 
+        if (redisCommand.equals(RedisCommand.ZADD_PROXY)) {
+            if (ttl == null) {
+                throw new IllegalArgumentException("ZADD_PROXY command should have time to live (TTL)");
+            }
+
+            if (wildcardColumn == null) {
+                throw new IllegalArgumentException("ZADD_PROXY command should have min max range set by wildcard");
+            }
+        }
+
         if (redisCommand.equals(RedisCommand.ZINCRE_REM_EX)) {
             if (ttl == null) {
                 throw new IllegalArgumentException("ZINCRE_REM_EX command should have time to live (TTL)");

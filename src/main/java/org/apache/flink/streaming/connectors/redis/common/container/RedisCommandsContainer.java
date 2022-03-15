@@ -143,6 +143,16 @@ public interface RedisCommandsContainer extends Serializable {
 
     /**
      * Composite action.
+     * Generate Proxy Key -> ZADD ->  ZREMRANGEBYRANK -> EXPIRE
+     *
+     * @param key The name of the Sorted Set
+     * @param score Score of the element
+     * @param element  element to be added
+     */
+    void zadd_proxy(String key, String score, String element, String min, String max, int seconds);
+
+    /**
+     * Composite action.
      * ZINCRE -> ZREMRANGEBYSCORE -> EXPIRE
      *
      * @param key The name of the Sorted Set

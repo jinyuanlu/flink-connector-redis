@@ -243,6 +243,52 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         }
     }
 
+    private int getLastWindow(String key) {
+        if (key == null ) {
+            return 0;
+        } else {
+            String strWin = key.substring(key.lastIndexOf('_') + 1);
+            return Integer.parseInt(strWin);
+        }
+    }
+
+    private Boolean isToggle(String lastProxyKey, String score, int toggleInterval) {
+        int lastWindow = getLastWindow(lastProxyKey);
+        int currentWindow = Integer.parseInt(score);
+        Boolean toggle = (currentWindow - lastWindow) > toggleInterval ? true : false;
+
+        return toggle;
+    }
+
+    @Override
+    public void zadd_proxy(final String key, final String score, final String element, String min, String max, int seconds) {
+        try {
+            int imin = Integer.parseInt(min);
+            int imax = Integer.parseInt(max);
+            String proxyKey = key + "_" + score;
+            String lastProxyKey = jedisCluster.get(key);
+
+            jedisCluster.zadd(proxyKey, Double.valueOf(score), element);
+
+            if (lastProxyKey == null
+                || jedisCluster.zcard(proxyKey) >= imax
+                || isToggle(lastProxyKey, score, 300)
+                ) {
+                jedisCluster.set(key, proxyKey);
+                jedisCluster.zremrangeByRank(proxyKey, imin, -(imax + 1));
+            }
+
+            jedisCluster.expire(proxyKey, seconds);
+
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command ZADD_PROXY to set {} error message {}",
+                    key, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
     @Override
     public void zincre_rem_ex(final String key, final String score, final String element, String min, String max, int seconds) {
         try {

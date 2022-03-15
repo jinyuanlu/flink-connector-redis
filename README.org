@@ -6,6 +6,7 @@
   - HMGET lookup by arbitrary key and multiple fields from rowdata
   - GET lookup by arbitrary key from rowdata
   - ZADD_REM_EX zadd -> zremrangebyscore -> expire
+  - ZADD_PROXY generate a proxy key -> zadd -> zremrangebyrank -> expire
   - ZINCRE_REM_EX zadd -> zremrangebyscore -> expire
 
 * Package
