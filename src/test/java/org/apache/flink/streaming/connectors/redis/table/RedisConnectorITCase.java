@@ -145,6 +145,41 @@ public class RedisConnectorITCase extends RedisTestBase {
                 .get();
         System.out.println(sql);
     }
+    
+    @Test
+    public void testHIncreBySink() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        EnvironmentSettings environmentSettings =
+            EnvironmentSettings
+            .newInstance()
+            .useBlinkPlanner()
+            .inStreamingMode()
+            .build();
+        
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, environmentSettings);
+
+        String ddl = String.format("create table sink_redis_by_hincre(username VARCHAR, level VARCHAR, age VARCHAR) "
+                                   + "with ( 'connector'='redis', "
+                                   + "'host'='%s','port'='%s', "
+                                   + "'redis-mode'='single',"
+                                   + "'field-column'='level',"
+                                   + "'key-column'='username', 'put-if-absent'='true','value-column'='age', '"
+                                   + REDIS_COMMAND + "'='"
+                                   + RedisCommand.HINCRBY + "', "
+                                   + "'maxIdle'='2', 'minIdle'='1'  )",
+                                   REDIS_HOST, REDIS_PORT) ;
+
+        log.info(ddl);
+
+        tEnv.executeSql(ddl);
+        String sql = " insert into sink_redis_by_hincre select * from (values ('test_hash', '3', '15'))";
+        TableResult tableResult = tEnv.executeSql(sql);
+        tableResult.getJobClient().get()
+                .getJobExecutionResult()
+                .get();
+        System.out.println(sql);
+    }
 
     @Test
     public void testZaddRemExSink() throws Exception {

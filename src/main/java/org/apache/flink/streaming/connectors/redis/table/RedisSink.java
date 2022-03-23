@@ -108,7 +108,10 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
         String value = redisSinkMapper.getValueFromData(input, valueIndex);
         String field = null;
         String wildcard = null;
-        if(redisCommand.getRedisDataType() == RedisDataType.HASH || redisCommand.getRedisDataType() == RedisDataType.SORTED_SET){
+        if(redisCommand.getRedisDataType() == RedisDataType.HASH
+           || redisCommand.getRedisDataType() == RedisDataType.SORTED_SET
+           || redisCommand.getRedisDataType() == RedisDataType.HINCRBY
+           ){
             field = redisSinkMapper.getFieldFromData(input, fieldIndex);
         }
 
