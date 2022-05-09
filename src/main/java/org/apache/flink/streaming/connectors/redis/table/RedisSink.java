@@ -138,7 +138,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 this.redisCommandsContainer.publish(key, value);
                 break;
             case ZADD:
-                this.redisCommandsContainer.zadd(key, field, value);
+                this.redisCommandsContainer.zadd(key, value, field);
                 break;
             case ZADD_REM_EX:
                 wildcard = redisSinkMapper.getWildcardFromData(input, wildcardIndex);
